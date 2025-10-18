@@ -1,0 +1,47 @@
+name: gitops-lite-reusable
+on:
+  workflow_call:
+    inputs:
+      overlay:
+        required: true
+        type: string
+      kube_ns:
+        required: true
+        type: string
+    secrets:
+      K8S_SERVER:
+        required: true
+      K8S_TOKEN:
+        required: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: imranismail/setup-kustomize@v2
+      - run: |
+          kubectl config set-cluster c --server="${{ secrets.K8S_SERVER }}" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="${{ secrets.K8S_TOKEN }}"
+          kubectl config set-context ctx --cluster=c --user=ci --namespace=${{ inputs.kube_ns }}
+          kubectl config use-context ctx
+      - run: |
+          python3 tools/gitops-lite/gitops-lite.py plan \
+            --path deploy-gitops/overlays/${{ inputs.overlay }} --kustomize || true
+
+  sync:
+    if: github.event_name == 'workflow_call'
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: imranismail/setup-kustomize@v2
+      - run: |
+          kubectl config set-cluster c --server="${{ secrets.K8S_SERVER }}" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="${{ secrets.K8S_TOKEN }}"
+          kubectl config set-context ctx --cluster=c --user=ci --namespace=${{ inputs.kube_ns }}
+          kubectl config use-context ctx
+      - run: |
+          python3 tools/gitops-lite/gitops-lite.py sync \
+            --path deploy-gitops/overlays/${{ inputs.overlay }} --kustomize \
+            --server-side --enable-prune

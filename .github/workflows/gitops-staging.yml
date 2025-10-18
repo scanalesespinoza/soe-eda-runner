@@ -1,0 +1,13 @@
+name: gitops-staging
+on:
+  workflow_dispatch:
+
+jobs:
+  staging:
+    uses: ./.github/workflows/gitops-lite-reusable.yml
+    with:
+      overlay: "staging"
+      kube_ns: "soe-eda-staging"
+    secrets:
+      K8S_SERVER: ${{ secrets.K8S_SERVER_STG }}
+      K8S_TOKEN:  ${{ secrets.K8S_TOKEN_STG }}
