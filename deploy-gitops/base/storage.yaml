@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pvc
+  namespace: soe-eda-dev
+  labels:
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: models-pvc
+  namespace: soe-eda-dev
+  labels:
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
