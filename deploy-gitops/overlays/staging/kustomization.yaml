@@ -1,5 +1,6 @@
 resources:
   - ../../base
-nameSuffix: -staging
 commonLabels:
   env: staging
+patchesStrategicMerge:
+  - namespace-overrides.yaml
