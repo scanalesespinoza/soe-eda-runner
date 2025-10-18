@@ -4,6 +4,7 @@ metadata:
   name: eda-cm
   namespace: soe-eda-dev
   labels:
+    app.kubernetes.io/part-of: soe-eda-runner
     gitops-lite: managed
 data:
   DATASET_PATH: "/data/input.csv"
@@ -15,6 +16,7 @@ metadata:
   name: inference-cm
   namespace: soe-eda-dev
   labels:
+    app.kubernetes.io/part-of: soe-eda-runner
     gitops-lite: managed
 data:
   MODEL_PATH: "s3://models/current/model.onnx"

@@ -4,6 +4,7 @@ metadata:
   name: gitops-lite-ci
   namespace: soe-eda-dev
   labels:
+    app.kubernetes.io/part-of: soe-eda-runner
     gitops-lite: managed
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -11,6 +12,9 @@ kind: Role
 metadata:
   name: gitops-lite-apply
   namespace: soe-eda-dev
+  labels:
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
 rules:
   - apiGroups: ["", "apps", "batch", "route.openshift.io", "*"]
     resources: ["*"]
@@ -21,6 +25,9 @@ kind: RoleBinding
 metadata:
   name: gitops-lite-apply
   namespace: soe-eda-dev
+  labels:
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
 subjects:
   - kind: ServiceAccount
     name: gitops-lite-ci

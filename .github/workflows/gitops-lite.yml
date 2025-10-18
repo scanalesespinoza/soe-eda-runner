@@ -1,0 +1,68 @@
+name: gitops-lite
+
+on:
+  pull_request:
+    paths:
+      - "deploy-gitops/**"
+      - "tools/gitops-lite/**"
+  push:
+    branches: ["main"]
+    paths:
+      - "deploy-gitops/**"
+      - "tools/gitops-lite/**"
+
+jobs:
+  plan:
+    name: Plan (diff) - dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Install Python deps (yaml/json diff optional)
+        run: |
+          python3 --version
+          pip3 install --upgrade pip pyyaml
+
+      - name: Auth to cluster (dev)
+        run: |
+          kubectl config set-cluster cluster --server="${{ secrets.K8S_SERVER_DEV }}" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="${{ secrets.K8S_TOKEN_DEV }}"
+          kubectl config set-context ctx --cluster=cluster --user=ci --namespace=soe-eda-dev
+          kubectl config use-context ctx
+
+      - name: Plan (kubectl diff)
+        run: |
+          python3 tools/gitops-lite/gitops-lite.py plan \
+            --path deploy-gitops/overlays/dev --kustomize || true
+
+  sync:
+    name: Sync (apply+prune) - dev
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: plan
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Install Python deps
+        run: |
+          python3 --version
+          pip3 install --upgrade pip pyyaml
+
+      - name: Auth to cluster (dev)
+        run: |
+          kubectl config set-cluster cluster --server="${{ secrets.K8S_SERVER_DEV }}" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="${{ secrets.K8S_TOKEN_DEV }}"
+          kubectl config set-context ctx --cluster=cluster --user=ci --namespace=soe-eda-dev
+          kubectl config use-context ctx
+
+      - name: Sync (apply + prune)
+        run: |
+          python3 tools/gitops-lite/gitops-lite.py sync \
+            --path deploy-gitops/overlays/dev --kustomize \
+            --server-side --enable-prune
