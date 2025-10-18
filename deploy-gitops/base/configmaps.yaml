@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eda-cm
+  namespace: soe-eda-dev
+  labels:
+    gitops-lite: managed
+data:
+  DATASET_PATH: "/data/input.csv"
+  OUTPUT_PATH: "/out"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inference-cm
+  namespace: soe-eda-dev
+  labels:
+    gitops-lite: managed
+data:
+  MODEL_PATH: "s3://models/current/model.onnx"

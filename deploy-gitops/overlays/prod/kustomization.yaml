@@ -1,0 +1,6 @@
+resources:
+  - ../../base
+commonLabels:
+  env: prod
+patchesStrategicMerge:
+  - namespace-overrides.yaml
