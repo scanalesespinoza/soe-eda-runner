@@ -1,17 +1,22 @@
-# SOE EDA Runner
+# SOE-EDA-RUNNER
 
-El proyecto **SOE EDA Runner** proporciona un entorno reproducible para ejecutar y automatizar análisis exploratorios de datos (EDA) dentro de los flujos de trabajo de la organización. Está diseñado para centralizar configuraciones, scripts y documentación que permitan realizar experimentos rápidos, comparables y auditables en diferentes conjuntos de datos.
+SOE-EDA-RUNNER es un entorno estandarizado para realizar análisis exploratorios de datos (EDA) y entrenamientos de modelos de Machine Learning, diseñado para ser **portable, promovible y reproducible** sobre Kubernetes/OpenShift.
 
-## Objetivos del proyecto
-- **Estandarizar la ejecución de EDA** para reducir la variabilidad entre equipos y analistas.
-- **Automatizar tareas repetitivas** como carga de datos, generación de reportes y validaciones básicas.
-- **Facilitar la colaboración** mediante convenciones claras de estructura de carpetas, nomenclatura y herramientas.
-- **Asegurar la trazabilidad** de los experimentos mediante control de versiones y documentación asociada.
+## Objetivo
+Proveer un ciclo completo:
+**Dataset → EDA → Entrenamiento → Promoción a servicio → Inferencia → Reentrenamiento**
 
-## Fases planificadas
-1. **Levantamiento del entorno base**: definición de dependencias, estructura de archivos y scripts de inicialización.
-2. **Implementación del núcleo de ejecución**: desarrollo de utilidades para orquestar notebooks, pipelines y reportes automatizados.
-3. **Instrumentación y monitoreo**: incorporación de métricas de desempeño, validaciones de calidad y alarmas.
-4. **Documentación y capacitación**: creación de guías de uso, ejemplos y materiales para los equipos consumidores.
+## Tecnologías
+- **Python 3.11** – EDA y entrenamiento
+- **Quarkus (Java 21)** – Orquestación e interfaces
+- **OpenShift / Kubernetes** – Plataforma de ejecución
+- **GitHub Actions** – CI/CD
+- **GitOps Lite** – Sincronización declarativa de manifiestos
 
-Cada fase se documentará en el repositorio y se acompañará de hitos medibles que permitan validar el progreso frente a los objetivos estratégicos del proyecto.
+## Estructura general
+- `app/` – Servicios de aplicación (EDA worker, inferencia, integración, UI)
+- `ml/` – Pipelines y artefactos de análisis y modelos
+- `deploy-gitops/` – Manifiestos Kubernetes
+- `tools/` – Utilitarios (como gitops-lite)
+- `.github/workflows/` – CI/CD y automatización
+- `docs/` – Diagramas y documentación técnica
