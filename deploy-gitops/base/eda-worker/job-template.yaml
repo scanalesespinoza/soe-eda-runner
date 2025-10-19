@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eda-run-{{RUN_ID}}
+  labels:
+    app: eda-worker
+    gitops-lite: managed
+spec:
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      labels:
+        app: eda-worker
+    spec:
+      restartPolicy: Never
+      serviceAccountName: gitops-lite-ci
+      containers:
+        - name: runner
+          image: ghcr.io/tu-org/eda-train-worker:{{TAG}}
+          envFrom:
+            - configMapRef:
+                name: eda-cm
+            - secretRef:
+                name: s3-credentials
+          args:
+            - python
+            - /app/eda.py
+            - --input
+            - /data/insurance.csv
+            - --output
+            - /out/$(date +%Y%m%d%H%M%S)
+            - --outliers-col
+            - charges
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: out
+              mountPath: /out
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data-pvc
+        - name: out
+          persistentVolumeClaim:
+            claimName: models-pvc
