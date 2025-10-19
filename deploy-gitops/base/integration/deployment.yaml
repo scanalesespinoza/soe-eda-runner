@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration
+  labels:
+    app.kubernetes.io/name: integration
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: integration
+  template:
+    metadata:
+      labels:
+        app: integration
+    spec:
+      serviceAccountName: gitops-lite-ci
+      containers:
+        - name: app
+          image: ghcr.io/tu-org/integration-quarkus:{{TAG}}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: eda-cm
+            - secretRef:
+                name: s3-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: integration
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    app: integration
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: integration
+  labels:
+    gitops-lite: managed
+spec:
+  to:
+    kind: Service
+    name: integration
+  port:
+    targetPort: http
+  tls:
+    termination: edge
