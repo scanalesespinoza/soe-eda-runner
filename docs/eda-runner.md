@@ -33,7 +33,7 @@ python3 tools/gitops-lite/gitops-lite.py sync \
 
 1. **Build local**
    ```bash
-   docker build -t eda-worker:test app/eda-train-worker
+   docker build -t eda-worker:test -f app/eda-train-worker/Dockerfile .
    ```
 
 2. **Despliegue dev**

@@ -13,7 +13,7 @@ jobs:
       - name: Build image
         run: |
           IMAGE=ghcr.io/${{ github.repository }}/eda-train-worker:${{ github.sha }}
-          docker build -t $IMAGE app/eda-train-worker
+          docker build -t $IMAGE -f app/eda-train-worker/Dockerfile .
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
       - name: Login GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
