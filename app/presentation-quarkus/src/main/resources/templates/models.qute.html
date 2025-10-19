@@ -1,0 +1,37 @@
+{#include _layout}
+{#body}
+<div class="card">
+  <h2>Models</h2>
+  {#if promoted}
+    <p>Promoted <strong>{promoted.modelUri}</strong> — status: {promoted.status} — commit: {promoted.commit}</p>
+  {/if}
+  <table>
+    <thead>
+      <tr>
+        <th>URI</th>
+        <th>Created</th>
+        <th>Metrics</th>
+        <th>Tags</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {#for m in models}
+        <tr>
+          <td>{m.modelUri}</td>
+          <td>{m.createdAt}</td>
+          <td><pre style="white-space: pre-wrap">{m.metrics}</pre></td>
+          <td><pre style="white-space: pre-wrap">{m.tags}</pre></td>
+          <td>
+            <form method="post" action="/models/promote" style="display:inline">
+              <input type="hidden" name="modelUri" value="{m.modelUri}">
+              <button class="btn" type="submit">Promote</button>
+            </form>
+          </td>
+        </tr>
+      {/for}
+    </tbody>
+  </table>
+</div>
+{/body}
+{/include}

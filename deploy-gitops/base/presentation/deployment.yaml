@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: presentation
+  labels:
+    app.kubernetes.io/name: presentation
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: presentation
+  template:
+    metadata:
+      labels:
+        app: presentation
+    spec:
+      serviceAccountName: gitops-lite-ci
+      containers:
+        - name: app
+          image: ghcr.io/tu-org/presentation-quarkus:{{TAG}}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: INTEGRATION_API_BASE
+              valueFrom:
+                configMapKeyRef:
+                  name: eda-cm
+                  key: INTEGRATION_API_BASE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: presentation
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    app: presentation
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: presentation
+  labels:
+    gitops-lite: managed
+spec:
+  to:
+    kind: Service
+    name: presentation
+  port:
+    targetPort: http
+  tls:
+    termination: edge
