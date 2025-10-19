@@ -1,0 +1,53 @@
+name: build-integration
+
+on:
+  push:
+    paths:
+      - 'app/integration-quarkus/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build JAR
+        run: ./mvnw -f app/integration-quarkus -DskipTests package
+      - name: Build image
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}/integration-quarkus:${{ github.sha }}
+          docker build -t $IMAGE app/integration-quarkus
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+      - name: Login GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push
+        run: docker push $IMAGE
+
+  update-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update kustomize images (dev)
+        run: |
+          cd deploy-gitops/overlays/dev
+          if ! grep -q "integration-quarkus" kustomization.yaml; then
+            printf "\nimages:\n" >> kustomization.yaml
+          fi
+          sed -i "s#ghcr.io.*/integration-quarkus:.*#ghcr.io/${{ github.repository }}/integration-quarkus:${{ github.sha }}#g" kustomization.yaml || true
+          if ! grep -q "${{ github.sha }}" kustomization.yaml; then
+            printf "  - name: ghcr.io/${{ github.repository }}/integration-quarkus\n    newTag: ${{ github.sha }}\n" >> kustomization.yaml
+          fi
+      - name: Commit & push
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci@bot"
+          git add deploy-gitops/overlays/dev/kustomization.yaml
+          git commit -m "chore: integration image -> ${{ github.sha }}" || echo "no changes"
+          git push
