@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eda-worker
+  labels:
+    app.kubernetes.io/name: eda-worker
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eda-worker
+  template:
+    metadata:
+      labels:
+        app: eda-worker
+    spec:
+      serviceAccountName: gitops-lite-ci
+      containers:
+        - name: app
+          image: ghcr.io/tu-org/eda-train-worker:{{TAG}}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: eda-cm
+            - secretRef:
+                name: s3-credentials
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: out
+              mountPath: /out
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data-pvc
+        - name: out
+          persistentVolumeClaim:
+            claimName: models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eda-worker
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    app: eda-worker
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: eda-worker
+  labels:
+    gitops-lite: managed
+spec:
+  to:
+    kind: Service
+    name: eda-worker
+  port:
+    targetPort: http
+  tls:
+    termination: edge

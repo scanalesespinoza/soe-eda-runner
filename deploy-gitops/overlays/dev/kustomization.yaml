@@ -1,4 +1,8 @@
 resources:
   - ../../base
+  - ../../base/eda-worker
 commonLabels:
   env: dev
+images:
+  - name: ghcr.io/tu-org/eda-train-worker
+    newTag: dev-PLACEHOLDER-SHA
