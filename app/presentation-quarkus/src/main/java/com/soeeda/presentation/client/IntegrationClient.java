@@ -7,6 +7,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import com.soeeda.presentation.model.dto.ModelInfo;
 import com.soeeda.presentation.model.dto.PromoteRequest;
 import com.soeeda.presentation.model.dto.PromoteResponse;
+import com.soeeda.presentation.model.dto.RetrainRequest;
 import com.soeeda.presentation.model.dto.RunResponse;
 import com.soeeda.presentation.model.dto.RunStatus;
 import com.soeeda.presentation.model.dto.StartEdaRequest;
@@ -40,4 +41,8 @@ public interface IntegrationClient {
   @POST
   @Path("/promote")
   PromoteResponse promote(PromoteRequest req);
+
+  @POST
+  @Path("/train/retrain")
+  RunResponse retrain(RetrainRequest req);
 }

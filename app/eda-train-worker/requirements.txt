@@ -1,5 +1,10 @@
 fastapi
 uvicorn
 pandas
+numpy
+scikit-learn
 matplotlib
 seaborn
+pyyaml
+boto3
+skl2onnx

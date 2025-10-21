@@ -3,6 +3,7 @@ package com.soeeda.integration.api;
 import com.soeeda.integration.model.dto.ModelInfo;
 import com.soeeda.integration.model.dto.PromoteRequest;
 import com.soeeda.integration.model.dto.PromoteResponse;
+import com.soeeda.integration.model.dto.RetrainRequest;
 import com.soeeda.integration.model.dto.RunResponse;
 import com.soeeda.integration.model.dto.RunStatus;
 import com.soeeda.integration.model.dto.StartEdaRequest;
@@ -60,6 +61,16 @@ public class IntegrationResource {
         Map<String, Object> params = Optional.ofNullable(request.params()).orElse(Map.of());
         String runId = k8sJobService.startTrain(request.datasetPath(), params);
         return new RunResponse(runId, "SUBMITTED", "Training job submitted");
+    }
+
+    @POST
+    @Path("/train/retrain")
+    public RunResponse retrain(RetrainRequest request) {
+        String datasetPath = request.datasetPath();
+        String outPrefix = Optional.ofNullable(request.outPrefix()).orElse("/out");
+        Map<String, Object> params = Optional.ofNullable(request.params()).orElse(Map.of());
+        String runId = k8sJobService.startRetrain(datasetPath, outPrefix, params);
+        return new RunResponse(runId, "SUBMITTED", "Retrain job submitted");
     }
 
     @GET

@@ -1,0 +1,6 @@
+thresholds:
+  r2_min_gain: 0.01
+  rmse_min_drop: 100
+actions:
+  auto_promote: true
+  target_overlay: dev

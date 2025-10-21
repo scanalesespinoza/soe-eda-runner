@@ -7,6 +7,7 @@ import com.soeeda.presentation.client.IntegrationClient;
 import com.soeeda.presentation.model.dto.ModelInfo;
 import com.soeeda.presentation.model.dto.PromoteRequest;
 import com.soeeda.presentation.model.dto.PromoteResponse;
+import com.soeeda.presentation.model.dto.RetrainRequest;
 import com.soeeda.presentation.model.dto.RunResponse;
 import com.soeeda.presentation.model.dto.RunStatus;
 import com.soeeda.presentation.model.dto.StartEdaRequest;
@@ -105,5 +106,16 @@ public class UiResource {
     String reportUrl = "/out/" + runId + "/eda-report.html";
     return report.data("title", "EDA Report")
                  .data("reportUrl", reportUrl);
+  }
+
+  @POST
+  @Path("/retrain")
+  @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+  public TemplateInstance retrain(@FormParam("datasetPath") String datasetPath) {
+    RetrainRequest request = new RetrainRequest(datasetPath, "/out", Map.of());
+    RunResponse response = client.retrain(request);
+    return runs.data("title", "Runs")
+               .data("message", "Retrain submitted")
+               .data("runId", response.runId());
   }
 }

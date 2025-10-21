@@ -4,6 +4,7 @@ resources:
   - ../../base/integration
   - ../../base/presentation
   - ../../base/inference
+  - ../../base/train
 commonLabels:
   env: dev
 images:

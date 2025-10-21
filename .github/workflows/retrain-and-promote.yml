@@ -1,0 +1,81 @@
+name: retrain-and-promote
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    outputs:
+      candidate_metrics: ${{ steps.locate.outputs.candidate_metrics }}
+      current_metrics: ${{ steps.locate.outputs.current_metrics }}
+      candidate_uri: ${{ steps.locate.outputs.candidate_uri }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & push worker (placeholder)
+        run: echo "skip - imagen del worker ya publicada"
+
+      - name: Launch retrain Job (dev)
+        env:
+          K8S_SERVER: ${{ secrets.K8S_SERVER_DEV }}
+          K8S_TOKEN: ${{ secrets.K8S_TOKEN_DEV }}
+        run: |
+          kubectl config set-cluster c --server="$K8S_SERVER" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="$K8S_TOKEN"
+          kubectl config set-context ctx --cluster=c --user=ci --namespace=soe-eda-dev
+          kubectl config use-context ctx
+          kubectl create job retrain-$(date +%s) --image=ghcr.io/${{ github.repository }}/eda-train-worker:${{ github.sha }} \
+            -- /bin/sh -c "python /app/train.py --dataset /data/insurance.csv --outdir /out/retrain/$(date +%Y%m%d%H%M%S)"
+          kubectl wait --for=condition=complete job -l job-name --timeout=900s || true
+          kubectl get pods -l job-name -o name | xargs -I{} kubectl logs {} --tail=200 || true
+
+      - name: Locate candidate artefacts
+        id: locate
+        run: |
+          echo "candidate_metrics=ml/models/candidate/metrics.json" >> "$GITHUB_OUTPUT"
+          echo "current_metrics=ml/models/current/metrics.json" >> "$GITHUB_OUTPUT"
+          echo "candidate_uri=s3://models/insurance/regressor/$(date +%Y%m%d%H%M%S)/model.onnx" >> "$GITHUB_OUTPUT"
+
+  evaluate_and_promote:
+    needs: retrain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip3 install pyyaml boto3
+
+      - name: Read promotion policy
+        id: policy
+        run: |
+          python3 - <<'PY' >> "$GITHUB_ENV"
+import yaml
+policy = yaml.safe_load(open('ml/policies/promotion.yaml'))
+auto_promote = str(policy.get('actions', {}).get('auto_promote', True)).lower()
+print(f"AUTO_PROMOTE={auto_promote}")
+PY
+
+      - name: Compare metrics & update overlay
+        run: |
+          python3 tools/promotion/auto_promote.py \
+            "${{ needs.retrain.outputs.current_metrics || 'ml/models/current/metrics.json' }}" \
+            "${{ needs.retrain.outputs.candidate_metrics || 'ml/models/candidate/metrics.json' }}" \
+            "${{ needs.retrain.outputs.candidate_uri || 's3://models/insurance/regressor/latest/model.onnx' }}"
+
+      - name: Push changes
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci@bot"
+          git diff --quiet || git push
+
+      - name: Open PR if auto_promote=false
+        if: ${{ env.AUTO_PROMOTE == 'false' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Auto-promotion: candidate → dev"
+          body: "Automated promotion based on metrics thresholds."
+          branch: "auto-promote/dev"
+          base: "main"
