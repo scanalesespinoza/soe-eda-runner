@@ -1,30 +1,17 @@
-KUSTOMIZE_PATH ?= deploy-gitops/overlays/dev
-KUBE_BIN ?= kubectl
+OVERLAY ?= deploy-gitops/overlays/dev
 
 plan:
-python3 tools/gitops-lite/gitops-lite.py plan --path $(KUSTOMIZE_PATH) --kustomize
+python3 tools/gitops-lite/gitops-lite.py plan --path $(OVERLAY) --kustomize || true
 
 status:
-python3 tools/gitops-lite/gitops-lite.py status --path $(KUSTOMIZE_PATH) --kustomize || true
+python3 tools/gitops-lite/gitops-lite.py status --path $(OVERLAY) --kustomize || true
 
 sync:
-python3 tools/gitops-lite/gitops-lite.py sync --path $(KUSTOMIZE_PATH) --kustomize --server-side --enable-prune
+python3 tools/gitops-lite/gitops-lite.py sync --path $(OVERLAY) --kustomize --server-side --enable-prune
 
-apply:
-python3 tools/gitops-lite/gitops-lite.py apply --path $(KUSTOMIZE_PATH) --kustomize --server-side
+sync-dev:  ; $(MAKE) sync OVERLAY=deploy-gitops/overlays/dev
+sync-stg:  ; $(MAKE) sync OVERLAY=deploy-gitops/overlays/staging
+sync-prod: ; $(MAKE) sync OVERLAY=deploy-gitops/overlays/prod
 
-prune:
-python3 tools/gitops-lite/gitops-lite.py prune --path $(KUSTOMIZE_PATH) --kustomize --server-side --selector gitops-lite=managed
-
-validate:
-python3 tools/gitops-lite/gitops-lite.py validate --path $(KUSTOMIZE_PATH) --kustomize
-
-# shortcuts por entorno
-sync-dev:
-$(MAKE) sync KUSTOMIZE_PATH=deploy-gitops/overlays/dev
-
-sync-staging:
-$(MAKE) sync KUSTOMIZE_PATH=deploy-gitops/overlays/staging
-
-sync-prod:
-$(MAKE) sync KUSTOMIZE_PATH=deploy-gitops/overlays/prod
+doctor:
+python3 tools/soectl/soectl.py doctor
