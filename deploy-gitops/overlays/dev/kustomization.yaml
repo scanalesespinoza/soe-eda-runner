@@ -3,6 +3,7 @@ resources:
   - ../../base/eda-worker
   - ../../base/integration
   - ../../base/presentation
+  - ../../base/inference
 commonLabels:
   env: dev
 images:
@@ -12,3 +13,7 @@ images:
     newTag: dev-PLACEHOLDER-SHA
   - name: ghcr.io/tu-org/presentation-quarkus
     newTag: dev-PLACEHOLDER-SHA
+  - name: ghcr.io/tu-org/inference-service
+    newTag: dev-PLACEHOLDER-SHA
+  - name: ghcr.io/scanalesespinoza/soe-eda-runner/inference-service
+    newTag: 61c0a0115ed815db62ca593062a03e616c342f5b

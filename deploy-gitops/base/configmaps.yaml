@@ -21,3 +21,5 @@ metadata:
     gitops-lite: managed
 data:
   MODEL_PATH: "s3://models/current/model.onnx"
+  MODEL_FORMAT: "onnx"
+  MODEL_META_PATH: ""

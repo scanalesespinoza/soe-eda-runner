@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference
+  labels:
+    app.kubernetes.io/name: inference
+    app.kubernetes.io/part-of: soe-eda-runner
+    gitops-lite: managed
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inference
+  template:
+    metadata:
+      labels:
+        app: inference
+    spec:
+      serviceAccountName: gitops-lite-ci
+      containers:
+        - name: app
+          image: ghcr.io/tu-org/inference-service:{{TAG}}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: inference-cm
+            - secretRef:
+                name: s3-credentials
+          volumeMounts:
+            - name: models
+              mountPath: /models
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    app: inference
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: inference
+  labels:
+    gitops-lite: managed
+spec:
+  to:
+    kind: Service
+    name: inference
+  port:
+    targetPort: http
+  tls:
+    termination: edge
