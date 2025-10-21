@@ -31,3 +31,5 @@ patchesStrategicMerge:
   - patches/inference-hpa.yaml
   - name: ghcr.io/scanalesespinoza/soe-eda-runner/inference-service
     newTag: 5ceda9eade1ecf4aea4991e84860bc10a768d6f7
+  - name: ghcr.io/scanalesespinoza/soe-eda-runner/inference-service
+    newTag: ad2786c84c94a871ffa214676f8dd96627a41f2d
