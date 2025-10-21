@@ -1,0 +1,58 @@
+name: smoke
+on:
+  workflow_call:
+    inputs:
+      overlay:
+        required: true
+        type: string
+      kube_ns:
+        required: true
+        type: string
+    secrets:
+      K8S_SERVER:
+        required: true
+      K8S_TOKEN:
+        required: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auth
+        run: |
+          kubectl config set-cluster c --server="${{ secrets.K8S_SERVER }}" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="${{ secrets.K8S_TOKEN }}"
+          kubectl config set-context ctx --cluster=c --user=ci --namespace=${{ inputs.kube_ns }}
+          kubectl config use-context ctx
+
+      - name: Esperar rollout inference/presentation/integration
+        run: |
+          for d in inference presentation integration; do
+            kubectl rollout status deploy/$d --timeout=180s || exit 1
+          done
+
+      - name: Smoke probes from cluster network
+        run: |
+          set -euo pipefail
+          POD_NAME="smoke-probes-$(date +%s%N)"
+          kubectl run "$POD_NAME" --restart=Never --image=curlimages/curl:8.5.0 --command -- sh -c '
+            set -eu
+            apk add --no-cache jq >/dev/null
+            integration_json=$(curl -fsS http://integration:8080/q/health)
+            printf "%s\n" "$integration_json" | jq .
+            inference_json=$(curl -fsS http://inference:8080/healthz)
+            printf "%s\n" "$inference_json" | jq .
+            jq -n "{records:[{age:40,bmi:28.2,children:2,smoker:0}]}" > payload.json
+            predict_json=$(curl -fsS -X POST http://inference:8080/predict -H "Content-Type: application/json" --data @payload.json)
+            printf "%s\n" "$predict_json" | jq .
+          '
+          kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/"$POD_NAME" --timeout=180s >/dev/null 2>&1 || \
+            kubectl wait --for=jsonpath='{.status.phase}'=Failed pod/"$POD_NAME" --timeout=1s >/dev/null 2>&1 || true
+          kubectl logs "$POD_NAME"
+          EXIT_CODE=$(kubectl get pod "$POD_NAME" -o jsonpath='{.status.containerStatuses[0].state.terminated.exitCode}')
+          kubectl delete pod "$POD_NAME" --ignore-not-found=true >/dev/null
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Smoke probes failed with exit code $EXIT_CODE"
+            exit 1
+          fi

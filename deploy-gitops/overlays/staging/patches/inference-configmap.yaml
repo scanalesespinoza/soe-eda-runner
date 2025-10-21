@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inference-cm
+  namespace: soe-eda-staging
+data:
+  MODEL_PATH: "s3://models/staging/current/model.onnx"
+  MODEL_FORMAT: "onnx"
+  MODEL_META_PATH: ""
