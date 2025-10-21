@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title ?: 'SOE-EDA UI'}</title>
+  <link href="https://cdn.jsdelivr.net/npm/modern-css-reset/dist/reset.min.css" rel="stylesheet">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    header, nav, main { max-width: 1080px; margin: 0 auto; }
+    .btn { padding: 8px 14px; border-radius: 10px; border:1px solid #ddd; text-decoration:none; display:inline-block; background:#fff; cursor:pointer; }
+    .card { border:1px solid #eee; padding:16px; border-radius:14px; margin:12px 0; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+    input, select, button { padding:8px; border:1px solid #ddd; border-radius:8px; }
+    input, select { width: 100%; }
+    form { display: grid; gap: 12px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border-bottom:1px solid #eee; padding:8px; text-align:left; vertical-align: top; }
+    nav { display:flex; gap:12px; margin:12px 0; }
+    iframe { background:#fff; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>SOE-EDA Runner</h1>
+  <nav>
+    <a class="btn" href="/">Home</a>
+    <a class="btn" href="/eda">Run EDA</a>
+    <a class="btn" href="/models">Models</a>
+  </nav>
+  <hr>
+</header>
+<main>
+  {#insert body}{/insert}
+</main>
+</body>
+</html>

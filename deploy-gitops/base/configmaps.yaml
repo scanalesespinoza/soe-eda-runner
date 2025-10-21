@@ -9,6 +9,7 @@ metadata:
 data:
   DATASET_PATH: "/data/input.csv"
   OUTPUT_PATH: "/out"
+  INTEGRATION_API_BASE: "http://integration.soe-eda-dev.svc.cluster.local"
 ---
 apiVersion: v1
 kind: ConfigMap

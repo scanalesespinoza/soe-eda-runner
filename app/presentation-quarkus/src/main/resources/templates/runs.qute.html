@@ -1,0 +1,27 @@
+{#include _layout}
+{#body}
+<div class="card">
+  <h2>Run Status</h2>
+  {#if message}
+    <p>{message}</p>
+  {/if}
+  {#if runId}
+    <p><strong>Run ID:</strong> {runId}</p>
+    <p>Consulta nuevamente copiando este enlace: <a href="/runs/{runId}">/runs/{runId}</a></p>
+  {/if}
+  {#if status}
+    <ul>
+      <li>Phase: {status.phase}</li>
+      <li>Succeeded: {status.succeeded}</li>
+      <li>Failed: {status.failed}</li>
+      <li>Started: {status.startedAt}</li>
+      <li>Finished: {status.finishedAt}</li>
+    </ul>
+    {#if status.logsTail}
+      <h3>Logs</h3>
+      <pre style="white-space: pre-wrap">{status.logsTail}</pre>
+    {/if}
+  {/if}
+</div>
+{/body}
+{/include}

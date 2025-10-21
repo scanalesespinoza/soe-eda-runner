@@ -1,0 +1,12 @@
+{#include _layout}
+{#body}
+<div class="card">
+  <h2>Run EDA</h2>
+  <form method="post" action="/eda/start">
+    <label>Dataset path (PVC o S3 descargado):</label>
+    <input name="datasetPath" placeholder="/data/insurance.csv" required>
+    <button class="btn" type="submit">Start</button>
+  </form>
+</div>
+{/body}
+{/include}

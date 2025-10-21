@@ -2,10 +2,13 @@ resources:
   - ../../base
   - ../../base/eda-worker
   - ../../base/integration
+  - ../../base/presentation
 commonLabels:
   env: dev
 images:
   - name: ghcr.io/tu-org/eda-train-worker
     newTag: dev-PLACEHOLDER-SHA
   - name: ghcr.io/tu-org/integration-quarkus
+    newTag: dev-PLACEHOLDER-SHA
+  - name: ghcr.io/tu-org/presentation-quarkus
     newTag: dev-PLACEHOLDER-SHA
