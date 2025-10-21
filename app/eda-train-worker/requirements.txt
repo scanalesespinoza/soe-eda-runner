@@ -8,3 +8,4 @@ seaborn
 pyyaml
 boto3
 skl2onnx
+prometheus-fastapi-instrumentator

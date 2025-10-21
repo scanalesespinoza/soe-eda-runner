@@ -1,5 +1,6 @@
 resources:
   - ../../base
+  - ../../base/observability
   - ../../base/eda-worker
   - ../../base/integration
   - ../../base/presentation

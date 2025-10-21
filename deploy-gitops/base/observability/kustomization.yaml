@@ -1,0 +1,4 @@
+resources:
+  - servicemonitors.yaml
+  - grafana-dashboards.yaml
+  - prometheus-rules.yaml

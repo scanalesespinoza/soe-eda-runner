@@ -1,0 +1,62 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: soe-eda-alerts
+  labels:
+    gitops-lite: managed
+spec:
+  groups:
+    - name: availability
+      rules:
+        - alert: InferenceDown
+          expr: up{job="inference"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Inference no disponible"
+            description: "El servicio inference no expone /metrics desde hace 2m."
+        - alert: IntegrationDown
+          expr: up{job="integration"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Integration no disponible"
+            description: "El servicio integration no expone /metrics desde hace 2m."
+    - name: latency-and-errors
+      rules:
+        - alert: InferenceHighP95
+          expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="inference"}[5m])) by (le)) > 0.2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Latencia p95 alta en inference"
+            description: "p95 > 200ms durante 10m."
+        - alert: InferenceHighErrorRate
+          expr: (sum(rate(http_server_requests_seconds_count{job="inference",status=~"5..|4.."}[5m])) / sum(rate(http_server_requests_seconds_count{job="inference"}[5m]))) > 0.02
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Error rate > 2% en inference"
+            description: "Error rate sostenido por encima de 2% en 10m."
+    - name: jobs-and-cron
+      rules:
+        - alert: EdaJobFailures
+          expr: increase(kube_job_failed{namespace="soe-eda-dev"}[30m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Fallo de Job EDA detectado"
+            description: "Se detectó al menos un Job fallido en los últimos 30 minutos."
+        - alert: RetrainMissedRun
+          expr: time() - max(kube_cronjob_next_schedule_time{cronjob="retrain-weekly",namespace="soe-eda-dev"}) > 86400
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Retrain no corrió según cron"
+            description: "El cron retrain-weekly no ha programado nuevas ejecuciones en 24h."

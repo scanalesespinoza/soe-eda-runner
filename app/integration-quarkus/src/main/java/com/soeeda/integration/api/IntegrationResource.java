@@ -11,6 +11,7 @@ import com.soeeda.integration.model.dto.StartTrainRequest;
 import com.soeeda.integration.service.GitOpsService;
 import com.soeeda.integration.service.K8sJobService;
 import com.soeeda.integration.service.ModelRegistryService;
+import io.micrometer.core.annotation.Timed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -40,6 +41,7 @@ public class IntegrationResource {
 
     @POST
     @Path("/eda/start")
+    @Timed(value = "integration.eda.start", description = "Time to submit EDA job")
     public RunResponse startEda(StartEdaRequest request) {
         String outputPath = Optional.ofNullable(request.outputPath()).orElse("/out");
         String runId = k8sJobService.startEda(

@@ -1,15 +1,27 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
+import sys
 import uuid
 from datetime import datetime
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="EDA Runner")
+
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter(
+    '{"time":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s","logger":"%(name)s"}'
+)
+handler.setFormatter(formatter)
+logging.getLogger().handlers = [handler]
+logging.getLogger().setLevel(logging.INFO)
+LOGGER = logging.getLogger("eda-train-worker")
 
 
 class EdaRequest(BaseModel):
@@ -24,11 +36,33 @@ class RetrainRequest(BaseModel):
     params: dict | None = None
 
 
+@app.on_event("startup")
+async def _startup() -> None:
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+    LOGGER.info(json.dumps({"event": "WORKER_STARTED"}))
+
+
+@app.get("/healthz")
+def healthz() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.post("/eda/run")
 def run_eda(req: EdaRequest):
     run_id = str(uuid.uuid4())[:8]
     outdir = os.path.join(req.output_path, run_id)
     os.makedirs(outdir, exist_ok=True)
+
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "EDA_RUN_STARTED",
+                "runId": run_id,
+                "datasetPath": req.dataset_path,
+                "outputDir": outdir,
+            }
+        )
+    )
 
     cmd = [
         "python",
@@ -53,6 +87,17 @@ def run_eda(req: EdaRequest):
         except Exception:
             summary = {}
 
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "EDA_RUN_COMPLETED",
+                "runId": run_id,
+                "status": status,
+                "outputDir": outdir,
+            }
+        )
+    )
+
     return {
         "runId": run_id,
         "status": status,
@@ -67,6 +112,17 @@ def retrain(req: RetrainRequest):
     run_id = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     outdir = os.path.join(req.out_prefix, "retrain", run_id)
     os.makedirs(outdir, exist_ok=True)
+
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "RETRAIN_STARTED",
+                "runId": run_id,
+                "datasetPath": req.dataset_path,
+                "outPrefix": req.out_prefix,
+            }
+        )
+    )
 
     train_cmd = [
         "python",
@@ -104,6 +160,17 @@ def retrain(req: RetrainRequest):
             improved = False
 
     status = "SUCCESS" if train_proc.returncode == 0 else "FAILED"
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "RETRAIN_COMPLETED",
+                "runId": run_id,
+                "status": status,
+                "outdir": outdir,
+                "improved": improved,
+            }
+        )
+    )
     return {
         "runId": run_id,
         "status": status,

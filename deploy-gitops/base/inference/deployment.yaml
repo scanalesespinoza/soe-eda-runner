@@ -27,6 +27,13 @@ spec:
                 name: inference-cm
             - secretRef:
                 name: s3-credentials
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
           volumeMounts:
             - name: models
               mountPath: /models
