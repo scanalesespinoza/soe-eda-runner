@@ -20,7 +20,7 @@ jobs:
 
   gates:
     needs: promote
-    if: always()
+    if: ${{ needs.promote.result == 'success' }}
     uses: ./.github/workflows/gates.yml
     with:
       overlay: ${{ inputs.to }}

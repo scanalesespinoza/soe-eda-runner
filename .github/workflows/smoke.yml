@@ -32,16 +32,27 @@ jobs:
             kubectl rollout status deploy/$d --timeout=180s || exit 1
           done
 
-      - name: Health checks
+      - name: Smoke probes from cluster network
         run: |
-          INTEG=$(kubectl get svc integration -o jsonpath='{.spec.clusterIP}')
-          INFER=$(kubectl get svc inference -o jsonpath='{.spec.clusterIP}')
-          curl -fsS "http://$INTEG:8080/q/health" | jq .
-          curl -fsS "http://$INFER:8080/healthz" | jq .
-
-      - name: Predict smoke
-        run: |
-          INFER_URL=$(kubectl get svc inference -o jsonpath='{.spec.clusterIP}')
-          curl -fsS -X POST "http://$INFER_URL:8080/predict" \
-            -H "Content-Type: application/json" \
-            -d '{"records":[{"age":40,"bmi":28.2,"children":2,"smoker":0}]}' | jq .
+          set -euo pipefail
+          POD_NAME="smoke-probes-$(date +%s%N)"
+          kubectl run "$POD_NAME" --restart=Never --image=curlimages/curl:8.5.0 --command -- sh -c '
+            set -eu
+            apk add --no-cache jq >/dev/null
+            integration_json=$(curl -fsS http://integration:8080/q/health)
+            printf "%s\n" "$integration_json" | jq .
+            inference_json=$(curl -fsS http://inference:8080/healthz)
+            printf "%s\n" "$inference_json" | jq .
+            jq -n "{records:[{age:40,bmi:28.2,children:2,smoker:0}]}" > payload.json
+            predict_json=$(curl -fsS -X POST http://inference:8080/predict -H "Content-Type: application/json" --data @payload.json)
+            printf "%s\n" "$predict_json" | jq .
+          '
+          kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/"$POD_NAME" --timeout=180s >/dev/null 2>&1 || \
+            kubectl wait --for=jsonpath='{.status.phase}'=Failed pod/"$POD_NAME" --timeout=1s >/dev/null 2>&1 || true
+          kubectl logs "$POD_NAME"
+          EXIT_CODE=$(kubectl get pod "$POD_NAME" -o jsonpath='{.status.containerStatuses[0].state.terminated.exitCode}')
+          kubectl delete pod "$POD_NAME" --ignore-not-found=true >/dev/null
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Smoke probes failed with exit code $EXIT_CODE"
+            exit 1
+          fi
