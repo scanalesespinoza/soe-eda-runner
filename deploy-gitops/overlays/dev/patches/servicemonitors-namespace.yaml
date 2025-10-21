@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: integration
+spec:
+  namespaceSelector:
+    matchNames:
+      - soe-eda-dev
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: presentation
+spec:
+  namespaceSelector:
+    matchNames:
+      - soe-eda-dev
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: inference
+spec:
+  namespaceSelector:
+    matchNames:
+      - soe-eda-dev
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: eda-worker
+spec:
+  namespaceSelector:
+    matchNames:
+      - soe-eda-dev

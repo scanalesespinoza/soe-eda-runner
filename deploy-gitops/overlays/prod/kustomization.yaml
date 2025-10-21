@@ -27,3 +27,4 @@ patches:
 patchesStrategicMerge:
   - namespace-overrides.yaml
   - patches/inference-configmap.yaml
+  - patches/servicemonitors-namespace.yaml

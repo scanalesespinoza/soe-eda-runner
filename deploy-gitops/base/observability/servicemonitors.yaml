@@ -8,9 +8,6 @@ spec:
   selector:
     matchLabels:
       app: integration
-  namespaceSelector:
-    matchNames:
-      - "soe-eda-dev"
   endpoints:
     - port: http
       path: /q/metrics
@@ -26,9 +23,6 @@ spec:
   selector:
     matchLabels:
       app: presentation
-  namespaceSelector:
-    matchNames:
-      - "soe-eda-dev"
   endpoints:
     - port: http
       path: /q/metrics
@@ -44,9 +38,6 @@ spec:
   selector:
     matchLabels:
       app: inference
-  namespaceSelector:
-    matchNames:
-      - "soe-eda-dev"
   endpoints:
     - port: http
       path: /metrics
@@ -62,9 +53,6 @@ spec:
   selector:
     matchLabels:
       app: eda-worker
-  namespaceSelector:
-    matchNames:
-      - "soe-eda-dev"
   endpoints:
     - port: http
       path: /metrics
