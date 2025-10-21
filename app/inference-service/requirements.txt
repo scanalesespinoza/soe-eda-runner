@@ -4,3 +4,4 @@ numpy
 joblib
 onnxruntime
 boto3
+prometheus-fastapi-instrumentator

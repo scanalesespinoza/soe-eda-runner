@@ -27,11 +27,30 @@ spec:
                 name: eda-cm
             - secretRef:
                 name: s3-credentials
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
           volumeMounts:
             - name: data
               mountPath: /data
             - name: out
               mountPath: /out
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
       volumes:
         - name: data
           persistentVolumeClaim:

@@ -1,0 +1,59 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: integration
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    matchLabels:
+      app: integration
+  endpoints:
+    - port: http
+      path: /q/metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: presentation
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    matchLabels:
+      app: presentation
+  endpoints:
+    - port: http
+      path: /q/metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: inference
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    matchLabels:
+      app: inference
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: eda-worker
+  labels:
+    gitops-lite: managed
+spec:
+  selector:
+    matchLabels:
+      app: eda-worker
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

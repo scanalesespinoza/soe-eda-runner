@@ -1,5 +1,6 @@
 resources:
   - ../../base
+  - ../../base/observability
   - ../../base/eda-worker
   - ../../base/integration
   - ../../base/presentation
@@ -26,3 +27,4 @@ patches:
 patchesStrategicMerge:
   - namespace-overrides.yaml
   - patches/inference-configmap.yaml
+  - patches/servicemonitors-namespace.yaml

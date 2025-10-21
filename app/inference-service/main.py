@@ -1,5 +1,7 @@
 import os
 import json
+import logging
+import sys
 from pathlib import Path
 from typing import List, Dict, Any
 from urllib.parse import urlparse
@@ -11,8 +13,18 @@ import onnxruntime as ort
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(title="Inference Service")
+
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter(
+    '{"time":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s","logger":"%(name)s"}'
+)
+handler.setFormatter(formatter)
+logging.getLogger().handlers = [handler]
+logging.getLogger().setLevel(logging.INFO)
+LOGGER = logging.getLogger("inference-service")
 
 MODEL_SOURCE_PATH = os.getenv("MODEL_PATH", "/models/model.onnx")
 MODEL_PATH = MODEL_SOURCE_PATH
@@ -75,6 +87,17 @@ def download_model_if_needed(source: str) -> str:
     filename = Path(key).name or "model.onnx"
     local_path = target_dir / filename
 
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "MODEL_DOWNLOAD", 
+                "source": source,
+                "bucket": bucket,
+                "key": key,
+            }
+        )
+    )
+
     session = boto3.session.Session(
         aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
         aws_secret_access_key=os.getenv("S3_SECRET_KEY"),
@@ -106,11 +129,30 @@ def load_model() -> None:
         PKL_MODEL = joblib.load(resolved_path)
     load_aux()
     READY = True
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "MODEL_LOADED",
+                "modelPath": resolved_path,
+                "modelFormat": MODEL_FORMAT,
+            }
+        )
+    )
 
 
 @app.on_event("startup")
-def startup() -> None:
+async def startup() -> None:
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
     load_model()
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "INFERENCE_READY",
+                "modelPath": MODEL_PATH,
+                "modelFormat": MODEL_FORMAT,
+            }
+        )
+    )
 
 
 @app.get("/healthz", response_model=Health)
@@ -129,4 +171,14 @@ def predict(req: PredictRequest) -> Dict[str, Any]:
         y = ORT_SESSION.run(None, {input_name: X.astype(np.float32)})[0].tolist()
     else:
         y = PKL_MODEL.predict(X).tolist()
-    return {"predictions": y, "count": len(y)}
+    result = {"predictions": y, "count": len(y)}
+    LOGGER.info(
+        json.dumps(
+            {
+                "event": "PREDICT_COMPLETED",
+                "records": len(req.records),
+                "modelPath": MODEL_PATH,
+            }
+        )
+    )
+    return result

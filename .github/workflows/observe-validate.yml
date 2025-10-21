@@ -1,0 +1,15 @@
+name: observe-validate
+on:
+  pull_request:
+    paths:
+      - 'deploy-gitops/base/observability/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: kubeconform
+        run: |
+          curl -L https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz
+          ./kubeconform -summary -strict -ignore-missing-schemas deploy-gitops/base/observability
