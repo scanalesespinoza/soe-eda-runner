@@ -1,0 +1,27 @@
+name: install-smoke
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Auth cluster (dev)
+        run: |
+          kubectl config set-cluster c --server="${{ secrets.K8S_SERVER_DEV }}" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="${{ secrets.K8S_TOKEN_DEV }}"
+          kubectl config set-context ctx --cluster=c --user=ci --namespace=soe-eda-dev
+          kubectl config use-context ctx
+
+      - name: Plan
+        run: python3 tools/gitops-lite/gitops-lite.py plan --path deploy-gitops/overlays/dev --kustomize || true
+
+      - name: Smoke: namespaces & core objects
+        run: |
+          kubectl get ns soe-eda-dev
+          kubectl get cm,secret -n soe-eda-dev
