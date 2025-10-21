@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: retrain-weekly
+  labels: { app: eda-worker, gitops-lite: managed }
+spec:
+  schedule: "0 3 * * 1"
+  jobTemplate:
+    spec:
+      template:
+        metadata: { labels: { app: eda-worker } }
+        spec:
+          restartPolicy: Never
+          serviceAccountName: gitops-lite-ci
+          containers:
+            - name: retrain
+              image: ghcr.io/tu-org/eda-train-worker:{{TAG}}
+              command: ["/bin/sh", "-c"]
+              envFrom:
+                - configMapRef: { name: eda-cm }
+                - secretRef:   { name: s3-credentials }
+              args:
+                - |
+                  python /app/train.py \
+                    --dataset /data/insurance.csv \
+                    --outdir /out/retrain/$(date +%Y%m%d%H%M%S)
+              volumeMounts:
+                - { name: data, mountPath: /data }
+                - { name: out,  mountPath: /out }
+          volumes:
+            - name: data
+              persistentVolumeClaim: { claimName: data-pvc }
+            - name: out
+              persistentVolumeClaim: { claimName: models-pvc }

@@ -2,6 +2,12 @@
 {#body}
 <div class="card">
   <h2>Models</h2>
+  <div style="margin-bottom: 1rem;">
+    <form method="post" action="/retrain" style="display:inline">
+      <input type="hidden" name="datasetPath" value="/data/insurance.csv">
+      <button class="btn" type="submit">Re-train</button>
+    </form>
+  </div>
   {#if promoted}
     <p>Promoted <strong>{promoted.modelUri}</strong> — status: {promoted.status} — commit: {promoted.commit}</p>
   {/if}

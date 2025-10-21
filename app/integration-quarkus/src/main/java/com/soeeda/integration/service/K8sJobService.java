@@ -15,6 +15,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -89,6 +92,47 @@ public class K8sJobService {
         return runId;
     }
 
+    public String startRetrain(String datasetPath, String outPrefix, Map<String, Object> params) {
+        String runId = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+            .withZone(ZoneOffset.UTC)
+            .format(Instant.now());
+        String jobName = "retrain-run-" + runId;
+        String paramsJson = JsonUtil.toJson(Optional.ofNullable(params).orElse(Map.of()));
+
+        List<String> args = new ArrayList<>();
+        args.add("python");
+        args.add("/app/train.py");
+        args.add("--dataset");
+        args.add(datasetPath);
+        args.add("--outdir");
+        String targetPrefix = outPrefix.endsWith("/") ? outPrefix : outPrefix + "/";
+        args.add(targetPrefix + "retrain/" + runId);
+        if (params != null && !params.isEmpty()) {
+            args.add("--params");
+            args.add(paramsJson);
+        }
+
+        Job job = baseJobBuilder(jobName)
+            .editOrNewSpec()
+                .withTtlSecondsAfterFinished(1800)
+                .editOrNewTemplate()
+                    .editOrNewSpec()
+                        .withRestartPolicy("Never")
+                        .addNewContainer()
+                            .withName(CONTAINER_NAME)
+                            .withImage(jobImage)
+                            .withArgs(args.toArray(new String[0]))
+                        .endContainer()
+                    .endSpec()
+                .endTemplate()
+            .endSpec()
+            .build();
+
+        client.batch().v1().jobs().inNamespace(namespace).resource(job).create();
+        LOG.infov("Retraining job {0} created", jobName);
+        return runId;
+    }
+
     public RunStatus status(String runId) {
         String jobName = guessJobName(runId);
         try {
@@ -125,6 +169,12 @@ public class K8sJobService {
         }
         if (runId.startsWith("eda-run-")) {
             return runId;
+        }
+        if (runId.startsWith("retrain-run-")) {
+            return runId;
+        }
+        if (runId.matches("\\d{14}")) {
+            return "retrain-run-" + runId;
         }
         return "eda-run-" + runId;
     }
