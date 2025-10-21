@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inference-cm
+  namespace: soe-eda-prod
+data:
+  MODEL_PATH: "s3://models/prod/current/model.onnx"
+  MODEL_FORMAT: "onnx"
+  MODEL_META_PATH: ""

@@ -1,0 +1,47 @@
+name: smoke
+on:
+  workflow_call:
+    inputs:
+      overlay:
+        required: true
+        type: string
+      kube_ns:
+        required: true
+        type: string
+    secrets:
+      K8S_SERVER:
+        required: true
+      K8S_TOKEN:
+        required: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auth
+        run: |
+          kubectl config set-cluster c --server="${{ secrets.K8S_SERVER }}" --insecure-skip-tls-verify=true
+          kubectl config set-credentials ci --token="${{ secrets.K8S_TOKEN }}"
+          kubectl config set-context ctx --cluster=c --user=ci --namespace=${{ inputs.kube_ns }}
+          kubectl config use-context ctx
+
+      - name: Esperar rollout inference/presentation/integration
+        run: |
+          for d in inference presentation integration; do
+            kubectl rollout status deploy/$d --timeout=180s || exit 1
+          done
+
+      - name: Health checks
+        run: |
+          INTEG=$(kubectl get svc integration -o jsonpath='{.spec.clusterIP}')
+          INFER=$(kubectl get svc inference -o jsonpath='{.spec.clusterIP}')
+          curl -fsS "http://$INTEG:8080/q/health" | jq .
+          curl -fsS "http://$INFER:8080/healthz" | jq .
+
+      - name: Predict smoke
+        run: |
+          INFER_URL=$(kubectl get svc inference -o jsonpath='{.spec.clusterIP}')
+          curl -fsS -X POST "http://$INFER_URL:8080/predict" \
+            -H "Content-Type: application/json" \
+            -d '{"records":[{"age":40,"bmi":28.2,"children":2,"smoker":0}]}' | jq .

@@ -1,0 +1,32 @@
+name: gates
+on:
+  workflow_call:
+    inputs:
+      overlay:
+        required: true
+        type: string
+      min_r2:
+        required: false
+        type: number
+        default: 0.70
+      max_rmse:
+        required: false
+        type: number
+        default: 5000
+
+jobs:
+  check-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Leer métricas del modelo propuesto
+        run: |
+          METRICS_FILE="ml/models/last/metrics.json"
+          if [ ! -f "$METRICS_FILE" ]; then
+            echo "❌ No metrics.json found"; exit 1
+          fi
+          R2=$(jq -r '.r2' "$METRICS_FILE")
+          RMSE=$(jq -r '.rmse' "$METRICS_FILE")
+          echo "r2=$R2 rmse=$RMSE"
+          awk -v r2="$R2" -v min="${{ inputs.min_r2 }}" 'BEGIN{if(r2<min) exit 1}'
+          awk -v rmse="$RMSE" -v max="${{ inputs.max_rmse }}" 'BEGIN{if(rmse>max) exit 1}'

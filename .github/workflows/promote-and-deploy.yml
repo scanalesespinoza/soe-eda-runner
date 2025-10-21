@@ -1,0 +1,48 @@
+name: promote-and-deploy
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        required: true
+        type: choice
+        options: [dev, staging]
+      to:
+        required: true
+        type: choice
+        options: [staging, prod]
+
+jobs:
+  promote:
+    uses: ./.github/workflows/promote.yml
+    with:
+      from: ${{ inputs.from }}
+      to: ${{ inputs.to }}
+
+  gates:
+    needs: promote
+    if: always()
+    uses: ./.github/workflows/gates.yml
+    with:
+      overlay: ${{ inputs.to }}
+      min_r2: 0.70
+      max_rmse: 5000
+
+  sync:
+    needs: gates
+    uses: ./.github/workflows/gitops-lite-reusable.yml
+    with:
+      overlay: ${{ inputs.to }}
+      kube_ns: ${{ inputs.to == 'staging' && 'soe-eda-staging' || 'soe-eda-prod' }}
+    secrets:
+      K8S_SERVER: ${{ inputs.to == 'staging' && secrets.K8S_SERVER_STG || secrets.K8S_SERVER_PRD }}
+      K8S_TOKEN: ${{ inputs.to == 'staging' && secrets.K8S_TOKEN_STG || secrets.K8S_TOKEN_PRD }}
+
+  smoke:
+    needs: sync
+    uses: ./.github/workflows/smoke.yml
+    with:
+      overlay: ${{ inputs.to }}
+      kube_ns: ${{ inputs.to == 'staging' && 'soe-eda-staging' || 'soe-eda-prod' }}
+    secrets:
+      K8S_SERVER: ${{ inputs.to == 'staging' && secrets.K8S_SERVER_STG || secrets.K8S_SERVER_PRD }}
+      K8S_TOKEN: ${{ inputs.to == 'staging' && secrets.K8S_TOKEN_STG || secrets.K8S_TOKEN_PRD }}

@@ -1,6 +1,28 @@
 resources:
   - ../../base
+  - ../../base/eda-worker
+  - ../../base/integration
+  - ../../base/presentation
+  - ../../base/inference
 commonLabels:
   env: prod
+images:
+  - name: ghcr.io/tu-org/eda-train-worker
+    newTag: prod-PLACEHOLDER-SHA
+  - name: ghcr.io/tu-org/integration-quarkus
+    newTag: prod-PLACEHOLDER-SHA
+  - name: ghcr.io/tu-org/presentation-quarkus
+    newTag: prod-PLACEHOLDER-SHA
+  - name: ghcr.io/tu-org/inference-service
+    newTag: prod-PLACEHOLDER-SHA
+patches:
+  - target:
+      kind: Deployment
+      name: inference
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
 patchesStrategicMerge:
   - namespace-overrides.yaml
+  - patches/inference-configmap.yaml

@@ -1,0 +1,73 @@
+name: promote
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Overlay origen (dev|staging)"
+        required: true
+        type: choice
+        options: [dev, staging]
+      to:
+        description: "Overlay destino (staging|prod)"
+        required: true
+        type: choice
+        options: [staging, prod]
+  workflow_call:
+    inputs:
+      from:
+        required: true
+        type: string
+      to:
+        required: true
+        type: string
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      FROM_OVERLAY: ${{ inputs.from || github.event.inputs.from }}
+      TO_OVERLAY: ${{ inputs.to || github.event.inputs.to }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copiar tags de images y MODEL_PATH
+        id: promote
+        run: |
+          FROM="deploy-gitops/overlays/${FROM_OVERLAY}/kustomization.yaml"
+          TO="deploy-gitops/overlays/${TO_OVERLAY}/kustomization.yaml"
+          echo "Promoviendo de $FROM a $TO"
+
+          # Copiar bloque 'images:' (estrategia imagen inmutable)
+          if grep -q "^images:" "$FROM"; then
+            FROM_IMAGES=$(awk '/^images:/{flag=1;print;next}/^[^ ]/{flag=0}flag' "$FROM")
+            awk -v RS= -v ORS='\n\n' -v repl="$FROM_IMAGES" '
+              BEGIN{done=0}
+              /^images:/ { if(!done){ print repl; done=1 } else { next } }
+              !/^images:/ { print }
+            ' "$TO" > "$TO.tmp" && mv "$TO.tmp" "$TO"
+          fi
+
+          # Copiar MODEL_PATH si existe parche/CM por overlay (estrategia A)
+          FROM_MODEL_FILE=$(grep -R --include="*.yaml" -l "MODEL_PATH" "deploy-gitops/overlays/${FROM_OVERLAY}" | head -n1)
+          TO_MODEL_FILE=$(grep -R --include="*.yaml" -l "MODEL_PATH" "deploy-gitops/overlays/${TO_OVERLAY}" | head -n1)
+          if [ -n "$FROM_MODEL_FILE" ] && [ -n "$TO_MODEL_FILE" ]; then
+            FROM_MODEL=$(grep -m1 -E "MODEL_PATH" "$FROM_MODEL_FILE" | sed -E 's/.*MODEL_PATH[: ]+//')
+            if [ -n "$FROM_MODEL" ]; then
+              sed -i -E "s#(MODEL_PATH[: ]+).*#\\1${FROM_MODEL}#g" "$TO_MODEL_FILE"
+            fi
+          fi
+
+          git config user.name "ci-bot"; git config user.email "ci@bot"
+          git checkout -b promote/${FROM_OVERLAY}-to-${TO_OVERLAY}
+          git add deploy-gitops/overlays/${TO_OVERLAY}/
+          git commit -m "promote: ${FROM_OVERLAY} -> ${TO_OVERLAY}"
+          git push -u origin HEAD
+          echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Crear Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Promote ${{ env.FROM_OVERLAY }} → ${{ env.TO_OVERLAY }}"
+          body: "Automated promotion."
+          branch: ${{ steps.promote.outputs.branch }}
+          base: main
