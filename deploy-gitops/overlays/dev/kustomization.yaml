@@ -3,6 +3,7 @@ resources:
   - ../../base/eda-worker
   - ../../base/integration
   - ../../base/presentation
+  - ../../base/inference
 commonLabels:
   env: dev
 images:
@@ -11,4 +12,6 @@ images:
   - name: ghcr.io/tu-org/integration-quarkus
     newTag: dev-PLACEHOLDER-SHA
   - name: ghcr.io/tu-org/presentation-quarkus
+    newTag: dev-PLACEHOLDER-SHA
+  - name: ghcr.io/tu-org/inference-service
     newTag: dev-PLACEHOLDER-SHA
