@@ -17,3 +17,5 @@ images:
     newTag: dev-PLACEHOLDER-SHA
   - name: ghcr.io/scanalesespinoza/soe-eda-runner/inference-service
     newTag: 61c0a0115ed815db62ca593062a03e616c342f5b
+  - name: ghcr.io/scanalesespinoza/soe-eda-runner/inference-service
+    newTag: 0dce981c6a25f2d43be53716c1fc71ce826ee70c
