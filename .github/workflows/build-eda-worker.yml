@@ -16,12 +16,15 @@ jobs:
           docker build -t $IMAGE -f app/eda-train-worker/Dockerfile .
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
       - name: Login GHCR
+        if: ${{ secrets.GHCR_TOKEN != '' }}
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push
+        if: ${{ secrets.GHCR_TOKEN != '' }}
         run: docker push $IMAGE
 
   update-dev:
     needs: build
+    if: ${{ secrets.GHCR_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

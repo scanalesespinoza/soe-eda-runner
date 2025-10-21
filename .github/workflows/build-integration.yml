@@ -23,14 +23,17 @@ jobs:
           docker build -t $IMAGE app/integration-quarkus
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
       - name: Login GHCR
+        if: ${{ secrets.GHCR_TOKEN != '' }}
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: docker login ghcr.io -u ${{ github.actor }} -p "$GHCR_TOKEN"
       - name: Push
+        if: ${{ secrets.GHCR_TOKEN != '' }}
         run: docker push $IMAGE
 
   update-dev:
     needs: build
+    if: ${{ secrets.GHCR_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
