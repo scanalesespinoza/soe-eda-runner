@@ -26,7 +26,7 @@ Esta guía instala el entorno sobre OpenShift/Kubernetes con CI/CD (GitHub Actio
    python3 tools/soectl/soectl.py init
    python3 tools/soectl/soectl.py bootstrap
 
-   # Si necesitas un overlay distinto, utiliza la opción explícita, por ejemplo:
+   # Si necesitas un overlay distinto, utiliza la opción explícita (usa "="), por ejemplo:
    # python3 tools/soectl/soectl.py init --overlay=dev
    # python3 tools/soectl/soectl.py bootstrap --overlay=dev
    ```
@@ -40,8 +40,11 @@ Esta guía instala el entorno sobre OpenShift/Kubernetes con CI/CD (GitHub Actio
    # El overlay "dev" es el valor por defecto, por lo que no es obligatorio pasarlo.
    python3 tools/soectl/soectl.py sync
 
-   # Si necesitas un overlay distinto, utiliza la opción explícita, por ejemplo:
+   # Si necesitas un overlay distinto, utiliza la opción explícita (usa "="), por ejemplo:
    # python3 tools/soectl/soectl.py sync --overlay=dev
+
+   # Para reinstalar limpiamente puedes ejecutar un cleanup previo al apply:
+   # python3 tools/soectl/soectl.py sync --overlay=dev --cleanup
    ```
 6. Build de imágenes base (opcional) y despliegue:
    - merge/push → workflows de build actualizan overlays → gitops-lite sync aplica.
