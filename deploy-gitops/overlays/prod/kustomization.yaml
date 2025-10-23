@@ -1,3 +1,4 @@
+namespace: soe-eda-prod
 resources:
   - ../../base
   - ../../base/observability

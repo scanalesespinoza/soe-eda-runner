@@ -211,8 +211,14 @@ def sync(
         help="Usar server-side apply",
         show_default=True,
     ),
+    cleanup: bool = typer.Option(
+        False,
+        "--cleanup",
+        help="Eliminar los recursos declarados antes de aplicar de nuevo",
+        show_default=True,
+    ),
 ):
-    """Sincroniza estado declarativo (plan → apply [+ prune])."""
+    """Sincroniza estado declarativo (cleanup opcional → plan → apply [+ prune])."""
     load_env()
     path = ROOT / "deploy-gitops" / "overlays" / overlay
     context, server = _get_cluster_context()
@@ -230,6 +236,23 @@ def sync(
         console.print(
             "[yellow]No se pudo generar un resumen de recursos (requiere kustomize o kubectl/oc con soporte kustomize y manifiestos válidos).[/yellow]"
         )
+    if cleanup:
+        console.print(f"[cyan]Cleanup ({overlay})[/cyan]")
+        manifest = _render_kustomize(path)
+        if not manifest:
+            console.print(
+                "[yellow]No se pudo renderizar el overlay para cleanup; omitiendo eliminación previa.[/yellow]"
+            )
+        else:
+            client = _which("kubectl", "oc")
+            if not client:
+                console.print("[red]kubectl u oc no encontrados[/red]")
+                raise typer.Exit(1)
+            run(
+                [client, "delete", "--ignore-not-found", "-f", "-"],
+                check=False,
+                input=manifest,
+            )
     console.print(f"[cyan]Plan ({overlay})[/cyan]")
     run(
         [sys.executable, str(GITOPS), "plan", "--path", str(path), "--kustomize"],
