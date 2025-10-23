@@ -37,7 +37,11 @@ Esta guía instala el entorno sobre OpenShift/Kubernetes con CI/CD (GitHub Actio
    ```
 5. Sincronizar manifiestos (GitOps Lite):
    ```bash
-   python3 tools/soectl/soectl.py sync --overlay dev
+   # El overlay "dev" es el valor por defecto, por lo que no es obligatorio pasarlo.
+   python3 tools/soectl/soectl.py sync
+
+   # Si necesitas un overlay distinto, utiliza la opción explícita, por ejemplo:
+   # python3 tools/soectl/soectl.py sync --overlay=dev
    ```
 6. Build de imágenes base (opcional) y despliegue:
    - merge/push → workflows de build actualizan overlays → gitops-lite sync aplica.
