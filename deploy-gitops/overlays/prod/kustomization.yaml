@@ -1,12 +1,13 @@
 namespace: soe-eda-prod
 resources:
+  - ../../base/namespace-prod.yaml
   - ../../base
   - ../../base/observability
   - ../../base/eda-worker
   - ../../base/integration
   - ../../base/presentation
   - ../../base/inference
-commonLabels:
+labels:
   env: prod
 images:
   - name: ghcr.io/tu-org/eda-train-worker
@@ -25,7 +26,6 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 3
-patchesStrategicMerge:
-  - namespace-overrides.yaml
-  - patches/inference-configmap.yaml
-  - patches/servicemonitors-namespace.yaml
+  - path: namespace-overrides.yaml
+  - path: patches/inference-configmap.yaml
+  - path: patches/servicemonitors-namespace.yaml
