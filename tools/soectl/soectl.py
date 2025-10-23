@@ -48,6 +48,69 @@ ROOT = Path(__file__).resolve().parents[2]
 GITOPS = ROOT / "tools" / "gitops-lite" / "gitops-lite.py"
 
 
+def _which(*candidates: str) -> str | None:
+    """Devuelve el primer ejecutable disponible en la lista de candidatos."""
+
+    for candidate in candidates:
+        path = shutil.which(candidate)
+        if path:
+            return path
+    return None
+
+
+def _get_cluster_context() -> tuple[str | None, str | None]:
+    """Obtiene contexto y endpoint del clúster actual si kubectl/oc están disponibles."""
+
+    client = _which("kubectl", "oc")
+    if not client:
+        return None, None
+
+    def _run_config(args: list[str]) -> str | None:
+        result = subprocess.run(
+            [client, "config", *args],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip() or None
+        return None
+
+    context = _run_config(["current-context"])
+    server = _run_config(["view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}"])
+    return context, server
+
+
+def _summarize_rendered_resources(path: Path) -> dict[str, list[str]]:
+    """Construye el overlay y devuelve un resumen agrupado por namespace."""
+
+    kustomize = _which("kustomize")
+    if not kustomize:
+        return {}
+
+    result = subprocess.run(
+        [kustomize, "build", str(path)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        return {}
+
+    summary: dict[str, list[str]] = {}
+    for resource in yaml.safe_load_all(result.stdout):
+        if not isinstance(resource, dict):
+            continue
+        kind = resource.get("kind")
+        metadata = resource.get("metadata") or {}
+        name = metadata.get("name")
+        if not kind or not name:
+            continue
+        namespace = metadata.get("namespace") or "default"
+        summary.setdefault(namespace, []).append(f"{kind}/{name}")
+    return summary
+
+
 def run(cmd, check=True, env=None, input=None):
     """Ejecuta un comando y gestiona errores con salida rica."""
     result = subprocess.run(cmd, text=True, capture_output=True, env=env, input=input)
@@ -134,6 +197,21 @@ def sync(
     """Sincroniza estado declarativo (plan → apply [+ prune])."""
     load_env()
     path = ROOT / "deploy-gitops" / "overlays" / overlay
+    context, server = _get_cluster_context()
+    if context or server:
+        console.print("[blue]Contexto activo:[/blue]" + (f" {context}" if context else " desconocido"))
+        if server:
+            console.print(f"[blue]API server:[/blue] {server}")
+    resources = _summarize_rendered_resources(path)
+    if resources:
+        console.print("[magenta]Recursos renderizados por namespace:[/magenta]")
+        for namespace, items in sorted(resources.items()):
+            formatted = ", ".join(sorted(items))
+            console.print(f"  [white]{namespace}[/white]: {formatted}")
+    else:
+        console.print(
+            "[yellow]No se pudo generar un resumen de recursos (requiere kustomize y manifiestos válidos).[/yellow]"
+        )
     console.print(f"[cyan]Plan ({overlay})[/cyan]")
     run(
         [sys.executable, str(GITOPS), "plan", "--path", str(path), "--kustomize"],
@@ -159,6 +237,10 @@ def sync(
         prune_cmd += ["--selector", "gitops-lite=managed"]
         run(prune_cmd, check=False)
     console.print("[green]Sync OK[/green]")
+    if resources:
+        console.print(
+            "[green]Sugerencia:[/green] Ejecuta 'oc get all -n <namespace>' o 'kubectl get all -n <namespace>' para revisar el estado."
+        )
 
 
 @app.command()
