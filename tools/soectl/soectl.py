@@ -95,6 +95,11 @@ def _render_kustomize(path: Path) -> str | None:
 
     result = subprocess.run(cmd, text=True, capture_output=True, check=False)
     if result.returncode != 0:
+        stderr = result.stderr.strip()
+        if stderr:
+            console.print(
+                f"[red]Error al renderizar kustomize ({' '.join(cmd)}):[/red]\n{stderr}"
+            )
         return None
 
     output = result.stdout.strip()
