@@ -10,6 +10,7 @@ Esta guía instala el entorno sobre OpenShift/Kubernetes con CI/CD (GitHub Actio
 - Acceso al clúster (token y URL API)
 - GHCR o registry con credenciales
 - Secrets de GitHub para CI/CD
+- GitHub CLI (`gh`) autenticado con scopes `repo`, `write:packages`
 
 ## Pasos rápidos
 1. Clonar repo y copiar variables:
@@ -30,11 +31,16 @@ Esta guía instala el entorno sobre OpenShift/Kubernetes con CI/CD (GitHub Actio
    # python3 tools/soectl/soectl.py init --overlay=dev
    # python3 tools/soectl/soectl.py bootstrap --overlay=dev
    ```
-4. Configurar secrets en GitHub (API server y token). El script carga automáticamente
-   las variables definidas en `.env` (o puedes exportarlas manualmente):
+4. Configurar secrets en GitHub (API server/token y GHCR). Autentícate primero con
+   GitHub CLI (requiere scopes `repo`, `write:packages`) y luego ejecuta el script.
+   Este carga automáticamente las variables definidas en `.env` y genera/actualiza
+   el secret `GHCR_TOKEN` con un token de contenedor:
    ```bash
+   gh auth login --hostname github.com --scopes "repo,write:packages"
    scripts/set-github-secrets.sh dev
    ```
+   Si ya cuentas con un token para GHCR puedes exportarlo como `GHCR_TOKEN` antes de
+   ejecutar el script para reutilizarlo.
 5. Sincronizar manifiestos (GitOps Lite):
    ```bash
    # El overlay "dev" es el valor por defecto, por lo que no es obligatorio pasarlo.
