@@ -97,8 +97,10 @@ def bootstrap(
     overlay: str = typer.Option("dev", "--overlay", "-o"),
     server_side: bool = typer.Option(
         True,
-        "--server-side/--no-server-side",
+        "--server-side",
+        "--no-server-side",
         help="Usar server-side apply",
+        show_default=True,
     ),
 ):
     """Aplica recursos base (ns, rbac, pvc, cm, secrets) en el overlay indicado."""
@@ -116,13 +118,17 @@ def sync(
     overlay: str = typer.Option("dev", "--overlay", "-o"),
     prune: bool = typer.Option(
         False,
-        "--prune/--no-prune",
+        "--prune",
+        "--no-prune",
         help="Eliminar recursos ausentes tras aplicar",
+        show_default=True,
     ),
     server_side: bool = typer.Option(
         True,
-        "--server-side/--no-server-side",
+        "--server-side",
+        "--no-server-side",
         help="Usar server-side apply",
+        show_default=True,
     ),
 ):
     """Sincroniza estado declarativo (plan → apply [+ prune])."""
@@ -140,20 +146,18 @@ def sync(
     run(cmd, check=False)
     if prune:
         console.print(f"[cyan]Prune ({overlay})[/cyan]")
-        run(
-            [
-                sys.executable,
-                str(GITOPS),
-                "prune",
-                "--path",
-                str(path),
-                "--kustomize",
-                "--server-side",
-                "--selector",
-                "gitops-lite=managed",
-            ],
-            check=False,
-        )
+        prune_cmd = [
+            sys.executable,
+            str(GITOPS),
+            "prune",
+            "--path",
+            str(path),
+            "--kustomize",
+        ]
+        if server_side:
+            prune_cmd.append("--server-side")
+        prune_cmd += ["--selector", "gitops-lite=managed"]
+        run(prune_cmd, check=False)
     console.print("[green]Sync OK[/green]")
 
 
@@ -162,8 +166,10 @@ def secrets(
     env: str = typer.Option("dev", "--env", "-e"),
     from_env: bool = typer.Option(
         True,
-        "--from-env/--no-from-env",
+        "--from-env",
+        "--no-from-env",
         help="Tomar secretos desde variables de entorno",
+        show_default=True,
     ),
 ):  # noqa: ARG001
     """Configura secrets en GitHub desde variables .env o ambiente actual."""
