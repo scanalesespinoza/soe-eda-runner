@@ -22,8 +22,13 @@ Esta guía instala el entorno sobre OpenShift/Kubernetes con CI/CD (GitHub Actio
    ```
 3. Bootstrap infraestructura (namespaces, SA, RBAC, PVC, CM, Secrets):
    ```bash
-   python3 tools/soectl/soectl.py init --overlay dev
-   python3 tools/soectl/soectl.py bootstrap --overlay dev
+   # El overlay "dev" es el valor por defecto, por lo que no es obligatorio pasarlo.
+   python3 tools/soectl/soectl.py init
+   python3 tools/soectl/soectl.py bootstrap
+
+   # Si necesitas un overlay distinto, utiliza la opción explícita, por ejemplo:
+   # python3 tools/soectl/soectl.py init --overlay=dev
+   # python3 tools/soectl/soectl.py bootstrap --overlay=dev
    ```
 4. Configurar secrets en GitHub (API server y token):
    ```bash
