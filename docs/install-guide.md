@@ -30,7 +30,8 @@ Esta guía instala el entorno sobre OpenShift/Kubernetes con CI/CD (GitHub Actio
    # python3 tools/soectl/soectl.py init --overlay=dev
    # python3 tools/soectl/soectl.py bootstrap --overlay=dev
    ```
-4. Configurar secrets en GitHub (API server y token):
+4. Configurar secrets en GitHub (API server y token). El script carga automáticamente
+   las variables definidas en `.env` (o puedes exportarlas manualmente):
    ```bash
    scripts/set-github-secrets.sh dev
    ```
