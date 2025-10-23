@@ -5,6 +5,12 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+import inspect
+
+try:
+    import click
+except ModuleNotFoundError:  # pragma: no cover - click is an indirect dependency of typer
+    click = None  # type: ignore[assignment]
 
 try:
     import typer
@@ -23,6 +29,18 @@ except ModuleNotFoundError as exc:  # pragma: no cover - defensive guard
 import yaml  # noqa: F401  # reservado para futuras lecturas de config
 from dotenv import load_dotenv
 from rich.console import Console
+
+if click is not None:  # pragma: no branch - simple compatibility shim
+    signature = inspect.signature(click.Parameter.make_metavar)
+    if len(signature.parameters) == 2:
+        original_make_metavar = click.Parameter.make_metavar
+
+        def _patched_make_metavar(self, ctx=None):  # type: ignore[override]
+            if ctx is None:
+                ctx = click.Context(click.Command(self.name or ""))
+            return original_make_metavar(self, ctx)
+
+        click.Parameter.make_metavar = _patched_make_metavar  # type: ignore[assignment]
 
 app = typer.Typer(help="SOE EDA Runner - utilitario de instalación y operación")
 console = Console()
