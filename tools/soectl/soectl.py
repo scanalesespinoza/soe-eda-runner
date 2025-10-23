@@ -6,7 +6,20 @@ import subprocess
 import sys
 from pathlib import Path
 
-import typer
+try:
+    import typer
+except ModuleNotFoundError as exc:  # pragma: no cover - defensive guard
+    requirements = Path(__file__).with_name("requirements.txt")
+    install_hint = (
+        f"python3 -m pip install -r {requirements}"
+        if requirements.exists()
+        else "python3 -m pip install typer"
+    )
+    sys.stderr.write(
+        "Falta la dependencia opcional 'typer' requerida por soectl.\n"
+        f"Ejecuta: {install_hint}\n"
+    )
+    raise SystemExit(1) from exc
 import yaml  # noqa: F401  # reservado para futuras lecturas de config
 from dotenv import load_dotenv
 from rich.console import Console
