@@ -69,7 +69,14 @@ def load_env():
 
 
 @app.command()
-def init(overlay: str = typer.Option("dev", help="Overlay a preparar")):
+def init(
+    overlay: str = typer.Option(
+        "dev",
+        "--overlay",
+        "-o",
+        help="Overlay a preparar",
+    )
+):
     """Validaciones básicas y presencia de kustomize/overlay."""
     load_env()
     if not shutil.which("kubectl") and not shutil.which("oc"):
@@ -87,7 +94,12 @@ def init(overlay: str = typer.Option("dev", help="Overlay a preparar")):
 
 @app.command()
 def bootstrap(
-    overlay: str = typer.Option("dev"), server_side: bool = True
+    overlay: str = typer.Option("dev", "--overlay", "-o"),
+    server_side: bool = typer.Option(
+        True,
+        "--server-side/--no-server-side",
+        help="Usar server-side apply",
+    ),
 ):
     """Aplica recursos base (ns, rbac, pvc, cm, secrets) en el overlay indicado."""
     load_env()
@@ -101,9 +113,17 @@ def bootstrap(
 
 @app.command()
 def sync(
-    overlay: str = typer.Option("dev"),
-    prune: bool = typer.Option(False),
-    server_side: bool = True,
+    overlay: str = typer.Option("dev", "--overlay", "-o"),
+    prune: bool = typer.Option(
+        False,
+        "--prune/--no-prune",
+        help="Eliminar recursos ausentes tras aplicar",
+    ),
+    server_side: bool = typer.Option(
+        True,
+        "--server-side/--no-server-side",
+        help="Usar server-side apply",
+    ),
 ):
     """Sincroniza estado declarativo (plan → apply [+ prune])."""
     load_env()
@@ -138,7 +158,14 @@ def sync(
 
 
 @app.command()
-def secrets(env: str = typer.Option("dev"), from_env: bool = True):  # noqa: ARG001
+def secrets(
+    env: str = typer.Option("dev", "--env", "-e"),
+    from_env: bool = typer.Option(
+        True,
+        "--from-env/--no-from-env",
+        help="Tomar secretos desde variables de entorno",
+    ),
+):  # noqa: ARG001
     """Configura secrets en GitHub desde variables .env o ambiente actual."""
     load_env()
     repo = os.getenv("REPO_SLUG")
