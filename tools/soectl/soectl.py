@@ -81,24 +81,37 @@ def _get_cluster_context() -> tuple[str | None, str | None]:
     return context, server
 
 
+def _render_kustomize(path: Path) -> str | None:
+    """Renderiza manifiestos usando kustomize o kubectl/oc como fallback."""
+
+    kustomize = _which("kustomize")
+    if kustomize:
+        cmd = [kustomize, "build", str(path)]
+    else:
+        client = _which("kubectl", "oc")
+        if not client:
+            return None
+        cmd = [client, "kustomize", str(path)]
+
+    result = subprocess.run(cmd, text=True, capture_output=True, check=False)
+    if result.returncode != 0:
+        return None
+
+    output = result.stdout.strip()
+    if not output:
+        return None
+    return output
+
+
 def _summarize_rendered_resources(path: Path) -> dict[str, list[str]]:
     """Construye el overlay y devuelve un resumen agrupado por namespace."""
 
-    kustomize = _which("kustomize")
-    if not kustomize:
-        return {}
-
-    result = subprocess.run(
-        [kustomize, "build", str(path)],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode != 0 or not result.stdout.strip():
+    rendered = _render_kustomize(path)
+    if not rendered:
         return {}
 
     summary: dict[str, list[str]] = {}
-    for resource in yaml.safe_load_all(result.stdout):
+    for resource in yaml.safe_load_all(rendered):
         if not isinstance(resource, dict):
             continue
         kind = resource.get("kind")
@@ -210,7 +223,7 @@ def sync(
             console.print(f"  [white]{namespace}[/white]: {formatted}")
     else:
         console.print(
-            "[yellow]No se pudo generar un resumen de recursos (requiere kustomize y manifiestos válidos).[/yellow]"
+            "[yellow]No se pudo generar un resumen de recursos (requiere kustomize o kubectl/oc con soporte kustomize y manifiestos válidos).[/yellow]"
         )
     console.print(f"[cyan]Plan ({overlay})[/cyan]")
     run(
