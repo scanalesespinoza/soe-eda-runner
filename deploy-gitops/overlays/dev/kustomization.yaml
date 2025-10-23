@@ -1,5 +1,6 @@
 namespace: soe-eda-dev
 resources:
+  - ../../base/namespace-dev.yaml
   - ../../base
   - ../../base/observability
   - ../../base/eda-worker
@@ -7,7 +8,7 @@ resources:
   - ../../base/presentation
   - ../../base/inference
   - ../../base/train
-commonLabels:
+labels:
   env: dev
 images:
   - name: ghcr.io/tu-org/eda-train-worker
@@ -26,7 +27,6 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 1
-patchesStrategicMerge:
-  - patches/inference-configmap.yaml
-  - patches/servicemonitors-namespace.yaml
-  - patches/inference-hpa.yaml
+  - path: patches/inference-configmap.yaml
+  - path: patches/servicemonitors-namespace.yaml
+  - path: patches/inference-hpa.yaml

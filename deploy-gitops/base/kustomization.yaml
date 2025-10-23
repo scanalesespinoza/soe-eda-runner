@@ -1,7 +1,4 @@
 resources:
-  - namespace-dev.yaml
-  - namespace-staging.yaml
-  - namespace-prod.yaml
   - rbac-ci.yaml
   - storage.yaml
   - secrets.yaml
