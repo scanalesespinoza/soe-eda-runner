@@ -28,6 +28,6 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 2
+  - path: namespace-overrides.yaml
   - path: patches/inference-configmap.yaml
   - path: patches/servicemonitors-namespace.yaml
-  - path: patches/inference-hpa.yaml
