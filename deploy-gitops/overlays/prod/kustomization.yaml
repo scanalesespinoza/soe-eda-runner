@@ -8,7 +8,9 @@ resources:
   - ../../base/presentation
   - ../../base/inference
 labels:
-  env: prod
+  - includeSelectors: true
+    pairs:
+      env: prod
 images:
   - name: ghcr.io/tu-org/eda-train-worker
     newTag: prod-PLACEHOLDER-SHA
